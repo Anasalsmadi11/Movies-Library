@@ -1,28 +1,90 @@
 "use strict";
+require("dotenv").config()
 const express = require("express");
-const app = express();
-const port = 3000;
 const cors = require("cors");
+const  axios = require("axios");
+const app = express();
+const port = process.env.PORT;
+const movieKey =process.env.API_KEY;
 app.use(cors());
 const movieData = require("./Movie Data/data.json");
 
-let movies = [];
-function Movie(title, path, overview) {
+function Movie(id,title,releaseDate,posterPath, overview) {
+  this.id=id;
   this.title = title;
-  this.path = path;
+  this.releaseDate = releaseDate;
+  this.posterPath=posterPath;
   this.overview = overview;
-  movies.push(this);
 }
 
-app.get("/", (req, res) => {
-  // res.json(`welcome to my first server`)
-  movieData.data.map((el) => {
-    new Movie(el.title, el.poster_path, el.overview);
-  });
-  res.json(movies)
-});
-
 app.get("/favorite", favorite);
+app.get("/trending",trendingHandle)
+app.get("/search",searchHandle)
+app.get("/collection",collectionHandle)
+app.get("/people",peopleHandle)
+
+  async function trendingHandle(req,res){
+  const url=`https://api.themoviedb.org/3/trending/all/week?api_key=${movieKey}&language=en-US`
+  // const url1=`https://api.themoviedb.org/3/movie/550?api_key=${movieKey}`
+  
+  let trendingFromApi=await axios.get(url)
+  // console.log(trendingFromApi)// to know what is inside the trendingFromApi i have to console it to see(result in map) if i need to type data or result should i type in map
+  let trendingMovies=trendingFromApi.data.results.map((item)=>{
+    return new Movie(item.id,item.title,item.release_date,item.poster_path,item.overview)
+
+  })
+  // console.log(trendingMovies)
+  res.send(trendingMovies)
+}
+
+function searchHandle(req,res){
+  let searchByMovie=req.query.search
+  const url =`https://api.themoviedb.org/3/search/movie?api_key=${movieKey}&language=en-US&query=The&page=2&movie=${searchByMovie}`
+  axios.get(url).then((result)=>{
+    console.log(result.data)
+    res.send(result.data) //(http://localhost:3000/search?search=NARUTO ,first[search is from the path in line24 the second one from req.query.search]) console the searchByMovie after you put the name(NARUTO) in the commented link and go to the terminal you'll find that searchByMovie have the value NARUTO
+  })
+}
+
+function collectionHandle(req,res){
+  let searchForCollections= req.query.collection
+  const url = `https://api.themoviedb.org/3/search/collection?api_key=${movieKey}&language=en-US&page=1&collection${searchForCollections}`
+  
+  axios.get(url).then((result)=>{
+    console.log(result.data)
+    res.send(result.data)
+  })
+}
+
+function peopleHandle(req,res){
+  let searchForPeople=req.query.people;
+  console.log(searchForPeople)
+  const url =`https://api.themoviedb.org/3/search/person?api_key=${movieKey}&language=en-US&page=1&include_adult=false&people${searchForPeople}`
+  axios.get(url).then((result)=>{
+    res.send(result.data)
+  })
+}
+
+//  async function peopleHandle(req,res){
+//   let url = `https://api.themoviedb.org/3/person/934433?api_key=${movieKey}&language=en-US`
+//   // const url=`https://api.themoviedb.org/3/trending/all/week?api_key=${movieKey}&language=en-US`
+//   let peopleFromApi= await axios.get(url)
+//   let actors=peopleFromApi.data.results.map((item)=>{
+//     new Movie(item.id)
+//   })
+//   // console.log(peopleFromApi)
+//   console.log(actors)
+//   res.send(actors)
+// }
+
+// res.json(`welcome to my first server`)
+// app.get("/", (req, res) => {
+// let movies=movieData.data.map((el) => {
+//   new Movie(el.title, el.poster_path, el.overview);
+// });
+// res.json(movies)
+// });
+
 function favorite(req, res) {
   res.json(`Welcome to Favorite Page
     `);
