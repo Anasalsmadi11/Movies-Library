@@ -28,17 +28,17 @@ function favorite(req, res) {
     `);
 }
 
-// app.use((req, res, next) => {
-//     res.status(404).send('Sorry, the requested resource was not found');
-//   });
-// app.use(notFoundHandle);
-// function notFoundHandle(req, res) {
-//   res.status(500).send({status:500,responseText:"the pageis not found"});
-// }
-// app.use(notFoundHandler);
-// function notFoundHandler(req, res) {
-//   res.status(404).send({status:404,responseText:"the pageis not found"});
-// }
+app.use((req, res, next) => {
+    res.status(404).send('Sorry, the requested resource was not found');
+  });
+app.use(notFoundHandle);
+function notFoundHandle(req, res) {
+  res.status(500).send({status:500,responseText:"the pageis not found"});
+}
+app.use(notFoundHandler);
+function notFoundHandler(req, res) {
+  res.status(404).send({status:404,responseText:"the pageis not found"});
+}
 
 
 
