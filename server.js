@@ -7,6 +7,9 @@ const app = express();
 const port = process.env.PORT;
 const movieKey =process.env.API_KEY;
 app.use(cors());
+app.use(express.json());
+const pg= require('pg');
+const client= new pg.Client(process.env.DATABASE_URL);
 const movieData = require("./Movie Data/data.json");
 
 function Movie(id,title,releaseDate,posterPath, overview) {
@@ -22,6 +25,33 @@ app.get("/trending",trendingHandle)
 app.get("/search",searchHandle)
 app.get("/collection",collectionHandle)
 app.get("/people",peopleHandle)
+app.get("/movies",getMoviesFromDb)
+app.post("/movies",addMovieToDbTable)
+
+
+function getMoviesFromDb(req,res){
+  const sql='select * from movielist;';
+  client.query(sql).then((data)=>{
+    // res.send(data)
+    let movieData=data.rows.map((item)=>{
+      let newMovie= new Movie(item.id,item.title,item.releasedate,item.posterpath,item.overview) //we get the names from the data in db(notice there is no camelcase)
+      return newMovie
+    })
+    res.send(movieData)
+  })
+}
+
+function addMovieToDbTable(req,res){
+  const movie =req.body;
+  // console.log(movie)
+  let sql ='insert into movielist(title,releasedate,posterpath,overview) values($1,$2,$3,$4) returning *;'
+  const values =[movie.title,movie.releasedate, movie.posterpath , movie.overview]
+  client.query(sql,values).then((data)=>{
+    res.status(201).send(data.rows)
+  })
+
+}
+
 
   async function trendingHandle(req,res){
   const url=`https://api.themoviedb.org/3/trending/all/week?api_key=${movieKey}&language=en-US`
@@ -65,25 +95,25 @@ function peopleHandle(req,res){
   })
 }
 
-//  async function peopleHandle(req,res){
-//   let url = `https://api.themoviedb.org/3/person/934433?api_key=${movieKey}&language=en-US`
-//   // const url=`https://api.themoviedb.org/3/trending/all/week?api_key=${movieKey}&language=en-US`
-//   let peopleFromApi= await axios.get(url)
-//   let actors=peopleFromApi.data.results.map((item)=>{
-//     new Movie(item.id)
-//   })
-//   // console.log(peopleFromApi)
-//   console.log(actors)
-//   res.send(actors)
-// }
+ async function peopleHandle(req,res){
+  let url = `https://api.themoviedb.org/3/person/934433?api_key=${movieKey}&language=en-US`
+  // const url=`https://api.themoviedb.org/3/trending/all/week?api_key=${movieKey}&language=en-US`
+  let peopleFromApi= await axios.get(url)
+  let actors=peopleFromApi.data.results.map((item)=>{
+    new Movie(item.id)
+  })
+  // console.log(peopleFromApi)
+  console.log(actors)
+  res.send(actors)
+}
 
 // res.json(`welcome to my first server`)
-// app.get("/", (req, res) => {
-// let movies=movieData.data.map((el) => {
-//   new Movie(el.title, el.poster_path, el.overview);
-// });
-// res.json(movies)
-// });
+app.get("/", (req, res) => {
+let movies=movieData.data.map((el) => {
+  new Movie(el.title, el.poster_path, el.overview);
+});
+res.json(movies)
+});
 
 function favorite(req, res) {
   res.json(`Welcome to Favorite Page
@@ -103,7 +133,8 @@ function notFoundHandler(req, res) {
 }
 
 
-
-app.listen(port, () => {
-  console.log(`this server listen on port ${port}`);
-});
+client.connect().then(()=>{
+  app.listen(port, () => {
+    console.log(`this server listen on port ${port}`);
+  });
+})
