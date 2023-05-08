@@ -27,7 +27,36 @@ app.get("/collection",collectionHandle)
 app.get("/people",peopleHandle)
 app.get("/movies",getMoviesFromDb)
 app.post("/movies",addMovieToDbTable)
+app.put("/movies/:id", updateMovies)
+app.delete("/movies/:id", deleteMovies)
+app.get("/movies/:id", getMovies)
 
+function getMovies(req,res){
+  const getId=req.params.id;
+  const sql =`select * from movielist where id=${getId}`
+  client.query(sql).then((data)=>{
+    res.status(202).send(data.rows)
+  })
+}
+
+function deleteMovies(req,res){
+  const id=req.params.id;
+  const sql =`delete from Movielist where id=${id};`
+  client.query(sql).then((data)=>{
+    res.status(202).send(data.rows)
+  })
+}
+
+function updateMovies(req,res){
+  const updateId = req.params.id
+  console.log(updateId)
+  const sql= `update Movielist set title=$1, releasedate=$2, posterpath=$3, overview=$4 where id=${updateId} returning *;`
+  const values=[req.body.title, req.body.releasedate, req.body.posterpath, req.body.overview]
+
+  client.query(sql, values).then((data)=>{
+    res.status(200).json(data.rows)
+  })
+}
 
 function getMoviesFromDb(req,res){
   const sql='select * from movielist;';
